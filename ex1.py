@@ -6,6 +6,19 @@ class Node:
         self.left = left
         self.right = right
 
+    def balance_factor(self):
+        left_height = self.left.height() if self.left else 0
+        right_height = self.right.height() if self.right else 0
+        return left_height - right_height
+
+    def height(self):
+        left_height = self.left.height() if self.left else 0
+        right_height = self.right.height() if self.right else 0
+        return 1 + max(left_height, right_height)
+
+    def is_balanced(self):
+        return abs(self.balance_factor()) <= 1
+
 
 # node insertion
 def insert(data, root=None):
