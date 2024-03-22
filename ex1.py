@@ -1,5 +1,4 @@
 import random
-import numpy as np
 import timeit
 import matplotlib.pyplot as plt
 
@@ -12,11 +11,17 @@ class Node:
         self.left = left
         self.right = right
 
-    def height(self):
-        if self is None:
-            return 0
-        else:
-            return 1 + max(Node.height(self.left), Node.height(self.right))
+
+# is balanced
+def is_balanced(root):
+    if not root:
+        return True, 0
+
+    left, right = is_balanced(root.left), is_balanced(root.right)
+    balanced = left[0] and right[0] and abs(left[1] - right[1]) <= 1
+    height = 1 + max(left[1], right[1])
+    balanced_factor = abs(left[1] - right[1])
+    return (balanced, height, balanced_factor)
 
 
 # node insertion
@@ -55,89 +60,37 @@ def search(data, root):
     return None
 
 
-# checking if it is a balanced tree
-def isBalanced(root):
-    if root is None:
-        return True
-    lh = root.left.height() if root.left else 0
-    rh = root.right.height() if root.right else 0
-    if abs(lh - rh) <= 1 and isBalanced(root.left) and isBalanced(root.right):
-        return True
-    return False
-
-
-# Function to shuffle the list of integers
-def shuffle_list(lst):
-    random.shuffle(lst)
-    return lst
-
-
 # Generate the list of the first 1000 integers
-integer_list = list(range(1, 1001))
+integers_list = list(range(1, 1002))
 
-# Initialize lists to store performance measures
+# Shuffle the list 1000 times to create 1000 different tasks
+tasks = [random.sample(integers_list, len(integers_list)) for _ in range(1000)]
+
+# Initialize lists to store balance and search time data
+balance_values = []
 search_times = []
-largest_balance_values = []
 
-# Perform 1000 shuffles and measure performance
-for _ in range(1000):
-    shuffled_list = shuffle_list(integer_list)
-    bst_root = None
-    total_balance = 0
+# For each task, create a binary search tree, measure performance, and balance
+for task in tasks:
+    # Create a new BST for each task
+    root = None
+    for num in task:
+        root = insert(num, root)
 
-    # Construct the BST with the shuffled list
-    for num in shuffled_list:
-        bst_root = insert(num, bst_root)
-
-    # Measure time for searching each integer in the tree
-    search_time = timeit.timeit(
-        lambda: search(random.choice(integer_list), bst_root), number=1000
-    )
-    search_times.append(search_time)
-
-    # Measure largest balance value for this shuffle
-    largest_balance_values.append(isBalanced(bst_root))
-
-# Calculate overall average time and largest balance value
-overall_average_time = np.mean(search_times)
-overall_largest_balance_value = max(
-    largest_balance_values
-)  ############## Need to figure this out ##############
-
-print("Overall Average Time for Searching:", overall_average_time)
-print("Overall Largest Balance Value:", overall_largest_balance_value)
-
-# Store the absolute balance and search time for each task
-scatter_data = []
-
-# Perform 1000 shuffles and measure performance
-for _ in range(1000):
-    shuffled_list = shuffle_list(integer_list)
-    bst_root = None
-
-    # Construct the BST with the shuffled list
-    for num in shuffled_list:
-        bst_root = insert(num, bst_root)
-
-    # Measure time for searching each integer in the tree
-    search_time = timeit.timeit(
-        lambda: search(random.choice(integer_list), bst_root), number=1000
+    # Measure search time for each integer in the tree
+    search_task_time = (
+        timeit.timeit(lambda: search(random.choice(integers_list), root), number=100)
+        / 100
     )
 
-    # Measure largest balance value for this shuffle
-    largest_balance = isBalanced(bst_root)
+    # Check balance and get the largest absolute balance value
+    is_tree_balanced = is_balanced(root)[2]
+    balance_values.append(is_tree_balanced)
+    search_times.append(search_task_time)
 
-    # Store the absolute balance and search time
-    scatter_data.append((largest_balance, search_time))
-
-# Separate the data for plotting
-x_values, y_values = zip(*scatter_data)
-
-# Plot the scatterplot
-plt.figure(figsize=(10, 6))
-plt.scatter(x_values, y_values, alpha=0.5)
-plt.title("Scatterplot of Absolute Balance vs. Search Time")
-plt.xlabel("Absolute Balance")
+# Generate a scatterplot
+plt.scatter(balance_values, search_times, alpha=0.5)
+plt.title("Balance vs Search Time")
+plt.xlabel("Absolute Balance Value")
 plt.ylabel("Search Time (seconds)")
-plt.grid(True)
 plt.show()
